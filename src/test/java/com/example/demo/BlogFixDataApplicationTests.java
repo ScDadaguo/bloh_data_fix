@@ -10,6 +10,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 @SpringBootTest
@@ -18,24 +21,41 @@ class BlogFixDataApplicationTests {
     @Autowired
     private ContentsMapper contentsMapper;
 
-
-
-
     @Test
     void contextLoads() throws IOException {
         List<Contents> result = contentsMapper.findAll();
-//        result.stream().map(contents -> {
-//            String article="#"+contents.getTitle() + "/n" + contents.getContent();
-//
-//        });
-        String article = "#" + result.get(1).getTitle() + "/n" + result.get(1).getContent();
-        File file = new File(result.get(1).getTitle()+".md");
-        String head = getHead(result.get(1));
-        FileWriter fileWriter = new FileWriter(file);
-        fileWriter.write(head+article);
-        fileWriter.close();
-        System.out.println("#"+result.get(1).getTitle()+"/n"+result.get(1).getContent());
+        result.forEach(contents -> {
+        File file = getFile(contents);
+        try {
+                FileWriter fileWriter = new FileWriter(file);
+                fileWriter.write(getContent(contents));
+                fileWriter.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
+
+    private File getFile(Contents contents) {
+        Long time = contents.getCreated().longValue();
+        String date=new SimpleDateFormat("yyyy-MM-dd").format(new Date(time * 1000));
+        date = date.substring(0, 4);
+        File packageFile = new File("/Users/dadaguo/Documents/GitHub_Blog/_posts/"+date);
+        if (!packageFile.exists()) {
+            packageFile.mkdir();
+        }
+        String fileName = getFileName(contents);
+        return new File(packageFile,fileName);
+    }
+
+    private String getFileName(Contents contents) {
+
+        Long time = contents.getCreated().longValue();
+        String date=new SimpleDateFormat("yyyy-MM-dd").format(new Date(time * 1000));
+        String title = date + "-" + contents.getTitle() + ".md";
+        return title;
+    }
+
 
     public static String getHead(Contents contents) {
         String head="---\n" +
@@ -46,6 +66,10 @@ class BlogFixDataApplicationTests {
                 "keywords: "+contents.getTags()+"\n" +
                 "---"+"\n";
         return head;
+    }
+
+    private String getContent(Contents contents) {
+        return getHead(contents) +"#"+contents.getTitle()+"/n"+ contents.getContent();
     }
 
 }
